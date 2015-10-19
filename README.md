@@ -4,7 +4,7 @@ A 'VPN' developed to follow [these instructions](http://courses.ece.ubc.ca/cpen4
 
 ## Setup
 
-How to setup on `Ubuntu 14.04.3 LTS`
+How to setup on `Ubuntu 14.04.3 LTS` with default `Python 2.7.6` (out of date, but default)
 
 ```
 chmod +x setup.sh
@@ -22,6 +22,8 @@ If you want to install all the requirements, run `pip install -r PIP_REQUIREMENT
 ## How the VPN works
 
 #### How the data is actually sent/received, and protected
+  
+  Answer goes here.
 
 #### Mutual authentication and key establishment protocols
 
