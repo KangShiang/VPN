@@ -2,6 +2,8 @@
 
 A 'VPN' developed to follow [these instructions](http://courses.ece.ubc.ca/cpen442/assignments/vpn.html "CPEN 442").
 
+[Export this file to PDF](EXPORT.md)
+
 ## Setup
 
 How to setup on `Ubuntu 14.04.3 LTS` with default `Python 2.7.6` (out of date, but default)
