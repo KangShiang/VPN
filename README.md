@@ -1,5 +1,7 @@
 # VPN
 
+A 'VPN' developed to follow [these instructions](http://courses.ece.ubc.ca/cpen442/assignments/vpn.html "CPEN 442").
+
 ## Setup
 
 How to setup on `Ubuntu 14.04.3 LTS`
