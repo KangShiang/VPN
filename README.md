@@ -18,3 +18,24 @@ Packages are to be installed in the virtualenv `vpnenv` which can be activated t
 If you install a pip package, make sure to `pip freeze > PIP_REQUIREMENTS.txt` and add to git.
 
 If you want to install all the requirements, run `pip install -r PIP_REQUIREMENTS.txt`.
+
+## How the VPN works
+
+#### How the data is actually sent/received, and protected
+
+#### Mutual authentication and key establishment protocols
+
+ * Protocols:
+ * Why we chose them, and the computation performed by each side at each step in the protocol(s):
+
+#### Derivation of encryption and integrity-protection keys from the shared secret value
+
+ * If we were implementing this VPN as a real-world product for sale, what algorithms, modulus sizes, encryption key size, and integrity key size would we use?
+
+#### Program details
+
+ * Explanation of what language the software is written in:
+ * Size of the program (lines of code; size of the executable):
+ * Modules or major architectural components of your program (along with inputs, outputs, and functionality for each):
+  * We used the Twisted framework for our chat functionality.  It allows us to use boilerplate functionality to create a versatile asyncronous two way chat server.
+  * We modified a boilerplate echo server to only allow one connection and function as either a client or server depending on which had already been opened on the target `address:port` pair.
