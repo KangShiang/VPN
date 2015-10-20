@@ -43,26 +43,59 @@ class ChatServer(Protocol):
     def __init__(self, factory):
         self.factory = factory
 
+    def handle_first_out(self, var=None):
+        # Here you can use self.factory.infostore (a dict)
+        # to add info about this connection (if you wish)
+        # or use the function to send something to the client
+        # :param var: optional can pass anything
+        if var!=None:
+            # do something with var
+            pass
+        pass
+
+    def handle_first_in(self, data):
+        # Here you can use self.factory.infostore (a dict)
+        # to add info about this connection (if you wish)
+        pass
+
     def connectionMade(self):
         if self.factory.echoers.__len__() < self.factory.connectionLimit:
             self.factory.echoers.append(self)
+            # Mark that we haven't received anything on self
+            self.factory.statuses[self] = False
+            self.factory.infostore[self] = {}
+            # Can send something out
+            self.handle_first_out()
         else:
             # Reject extra connections
             self.transport.loseConnection()
 
     def dataReceived(self, data):
-        self.factory.prompter.otherSaid(data)
+        if self.factory.statuses[self] == False:
+            self.handle_first_in(data)
+            self.factory.statuses[self] = True
+        else:
+            self.factory.prompter.otherSaid(data)
 
     def connectionLost(self, reason):
         if self in self.factory.echoers:
             self.factory.echoers.remove(self)
+            # Mark that we haven't received anything on self
+            del self.factory.statuses[self]
+            del self.factory.infostore[self]
         # Close the program when all client shuts down
         if self.factory.echoers.__len__() == 0:
+            while True: 
+                input = raw_input("STOP (yes)?>>")
+                if input == 'yes':
+                    break
             reactor.stop()
 
 class ChatServerFactory(Factory):
     def __init__(self):
         self.echoers = []
+        self.statuses = {}
+        self.infostore = {}
         # allow connection to just one server
         self.connectionLimit = 1
         self.prompter = ConsolePrompter(self)
@@ -78,11 +111,35 @@ class ChatClient(Protocol):
     def __init__(self, factory):
         self.factory = factory
 
+    def handle_first_out(self,var=None):
+        # Here you can use self.factory.infostore (a dict)
+        # to add info about this connection (if you wish)
+        # or use the function to send something to the client
+        # :param var: optional can pass anything
+        if var!=None:
+            # do something with var
+            pass
+        pass
+
+    def handle_first_in(self, data):
+        # Here you can use self.factory.infostore (a dict)
+        # to add info about this connection (if you wish)
+        pass
+
     def connectionMade(self):
         self.factory.echoers.append(self)
+        # Mark that we haven't received anything on self
+        self.factory.statuses[self] = False
+        self.factory.infostore[self] = {}
+        # Can send something out
+        self.handle_first_out()
 
     def dataReceived(self, data):
-        self.factory.prompter.otherSaid(data)
+        if self.factory.statuses[self] == False:
+            self.handle_first_in(data)
+            self.factory.statuses[self] = True
+        else:
+            self.factory.prompter.otherSaid(data)
 
     def connectionLost(self, reason):
         self.factory.echoers.remove(self)
@@ -92,6 +149,8 @@ class ChatClient(Protocol):
 class ChatClientFactory(ClientFactory):
     def __init__(self):
         self.echoers = []
+        self.statuses = {}
+        self.infostore = {}
         self.prompter = ConsolePrompter(self)
 
     def buildProtocol(self, addr):
