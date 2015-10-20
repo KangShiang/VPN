@@ -85,10 +85,6 @@ class ChatServer(Protocol):
             del self.factory.infostore[self]
         # Close the program when all client shuts down
         if self.factory.echoers.__len__() == 0:
-            while True: 
-                input = raw_input("STOP (yes)?>>")
-                if input == 'yes':
-                    break
             reactor.stop()
 
 class ChatServerFactory(Factory):
@@ -160,13 +156,17 @@ class ChatClientFactory(ClientFactory):
         for echoer in self.echoers:
             echoer.transport.write(message + "\r\n")
 
-try:
-    # Create a server if possible
-    fact = ChatServerFactory()
-    reactor.listenTCP(8000, fact,interface='127.0.0.1')
-except CannotListenError:
-    # else create a client
-    fact = ChatClientFactory()
-    reactor.connectTCP('127.0.0.1',8000, fact)
+def start_server_client():
+    try:
+        # Create a server if possible
+        fact = ChatServerFactory()
+        reactor.listenTCP(8000, fact,interface='127.0.0.1')
+    except CannotListenError:
+        # else create a client
+        fact = ChatClientFactory()
+        reactor.connectTCP('127.0.0.1',8000, fact)
 
-runWithProtocol(lambda: fact.prompter)
+    runWithProtocol(lambda: fact.prompter)
+
+if __name__ == "__main__":
+    start_server_client()
