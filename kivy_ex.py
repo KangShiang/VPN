@@ -1,5 +1,4 @@
 import kivy
-import vpn as VPN
 from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
@@ -17,7 +16,6 @@ install_twisted_reactor()
 kivy.require('1.0.6')  # replace with your current kivy version !
 from twisted.internet.error import CannotListenError
 from twisted.conch.stdio import runWithProtocol
-from twisted.internet import reactor
 from kivy.app import App
 from kivy.uix.label import Label
 from twisted.internet import reactor
