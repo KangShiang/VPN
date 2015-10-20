@@ -10,6 +10,9 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.popup import Popup
 from kivy.properties import StringProperty
 from kivy.lang import Builder
+from kivy.app import App
+from kivy.support import install_twisted_reactor
+install_twisted_reactor()
 
 kivy.require('1.0.6')  # replace with your current kivy version !
 from twisted.internet.error import CannotListenError
@@ -17,6 +20,8 @@ from twisted.conch.stdio import runWithProtocol
 from twisted.internet import reactor
 from kivy.app import App
 from kivy.uix.label import Label
+from twisted.internet import reactor
+import vpn
 
 Builder.load_string('''
 <ScrollableLabel>:
@@ -43,29 +48,15 @@ def on_enter(instance):
 
 
 class InfoPage(Screen):
-	#TODO:
-	def connect(self,*args):
-		if self.toggle.text == "Client":
-			fact = VPN.ChatClientFactory()
-			reactor.connectTCP('127.0.0.1',8000, fact)
-			runWithProtocol(lambda: fact.prompter)
-			self.manager.current = "ChatPage"
-		elif self.toggle.text == "Server":
-			try:
-				fact = VPN.ChatServerFactory()
-				reactor.listenTCP(8000, fact,interface='127.0.0.1')
-				runWithProtocol(lambda: fact.prompter)
-				self.manager.current = "ChatPage"
-			except CannotListenError:
-				popup = Popup(title='Warning',content=Label(text='Server is already running!'),size_hint=(None, None), size=(400, 400))
-				popup.open()
 
+	def connect(self,*args):
+		self.manager.current = "ChatPage"
+		vpn.start_server_client(kivyobj=self,reactor=reactor)
 
 	def __init__(self, **kwargs):
 		super (InfoPage, self).__init__(**kwargs)
 		root = FloatLayout()
-		self.toggle = ToggleButton(text='Client', font_size=14, pos_hint={'center_x': .5, 'center_y': .90},
-                              size_hint=(None, None))
+		self.toggle = ToggleButton(text='Client', font_size=14, pos_hint={'center_x': .5, 'center_y': .90},size_hint=(None, None))
 		self.toggle.bind(on_press=toggle_pressed)
 
 		ip_label = Label(text='IP Address', pos_hint={'center_x': .5, 'center_y': .80}, size_hint=(None, None),
@@ -123,13 +114,14 @@ class ChatPage(Screen):
 
 
 
-class Chat(App):
-	def build(self):
-		sm = ScreenManager()
-		sm.add_widget(InfoPage(name='InfoPage'))
-		sm.add_widget(ChatPage(name='ChatPage'))
-		return sm
+class MyApp(App):
+    def build(self):
+    	sm = ScreenManager()
+        sm.add_widget(InfoPage(name='InfoPage'))
+        sm.add_widget(ChatPage(name='ChatPage'))
+        apptools = App
+        return sm
 
 
 if __name__ == '__main__':
-    Chat().run()
+    MyApp().run()

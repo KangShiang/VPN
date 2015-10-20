@@ -15,7 +15,7 @@ subprocess.Popen(bash_command,shell=True).wait()
 
 # These can be filtered out of req_file
 # We filter out lines that start with these strings
-filterable = ['oneconf']
+filterable = ['oneconf','python-apt','python-debian','xdiagnose']
 
 f = open(req_file,"r")
 lines = f.readlines()

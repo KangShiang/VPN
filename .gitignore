@@ -1,1 +1,3 @@
 vpnenv/
+*.pyc
+*.swp
