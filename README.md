@@ -2,7 +2,7 @@
 
 A 'VPN' developed to follow [these instructions](http://courses.ece.ubc.ca/cpen442/assignments/vpn.html "CPEN 442").
 
-[Export this file to PDF](EXPORT.md)
+See instructions on how to [export this file to PDF](EXPORT.md).
 
 ## Setup
 
