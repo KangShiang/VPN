@@ -1,6 +1,5 @@
 from twisted.python.failure import Failure
 
-from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.protocol import ClientFactory
 from twisted.internet.error import CannotListenError
@@ -23,6 +22,8 @@ class ConsolePrompter(HistoricRecvLine, object):
         try:
             if not line:
                 reactor.stop()
+                if self.factory.kivyobj:
+                    self.factory.kivyobj.apptools.get_running_app().stop()
             self.drawInputLine()
             line = self.encrypt(line)
             self.multiEcho.tellAllClients(line)
@@ -86,6 +87,8 @@ class ChatServer(Protocol):
         # Close the program when all client shuts down
         if self.factory.echoers.__len__() == 0:
             reactor.stop()
+            if self.factory.kivyobj:
+                self.factory.kivyobj.apptools.get_running_app().stop()
 
 class ChatServerFactory(Factory):
     def __init__(self):
@@ -141,6 +144,8 @@ class ChatClient(Protocol):
         self.factory.echoers.remove(self)
         # Close the program when the server shuts down
         reactor.stop()
+        if self.factory.kivyobj:
+            self.factory.kivyobj.apptools.get_running_app().stop()
 
 class ChatClientFactory(ClientFactory):
     def __init__(self):
@@ -156,14 +161,18 @@ class ChatClientFactory(ClientFactory):
         for echoer in self.echoers:
             echoer.transport.write(message + "\r\n")
 
-def start_server_client():
+def start_server_client(kivyobj=None,reactor=None):
+    #if not reactor:
+    #    from twisted.internet import reactor
     try:
         # Create a server if possible
         fact = ChatServerFactory()
+        fact.kivyobj = kivyobj
         reactor.listenTCP(8000, fact,interface='127.0.0.1')
     except CannotListenError:
         # else create a client
         fact = ChatClientFactory()
+        fact.kivyobj = kivyobj
         reactor.connectTCP('127.0.0.1',8000, fact)
 
     runWithProtocol(lambda: fact.prompter)

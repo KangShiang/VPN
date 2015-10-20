@@ -8,11 +8,16 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.scrollview import ScrollView
 from kivy.properties import StringProperty
 from kivy.lang import Builder
+from kivy.app import App
+from kivy.support import install_twisted_reactor
+install_twisted_reactor()
 
 kivy.require('1.0.6')  # replace with your current kivy version !
 
 from kivy.app import App
 from kivy.uix.label import Label
+from twisted.internet import reactor
+import vpn
 
 Builder.load_string('''
 <ScrollableLabel>:
@@ -41,6 +46,7 @@ def on_enter(instance):
 class InfoPage(Screen):
     def connect(self,*args):
         self.manager.current = "ChatPage"
+        vpn.start_server_client(kivyobj=self,reactor=reactor)
 
     def __init__(self, **kwargs):
     	super (InfoPage, self).__init__(**kwargs)
@@ -111,6 +117,7 @@ class MyApp(App):
     	sm = ScreenManager()
         sm.add_widget(InfoPage(name='InfoPage'))
         sm.add_widget(ChatPage(name='ChatPage'))
+        apptools = App
         return sm
 
 
