@@ -100,14 +100,3 @@ class ChatClientFactory(ClientFactory):
     def tellAllClients(self, message):
         for echoer in self.echoers:
             echoer.transport.write(message + "\r\n")
-
-try:
-    # Create a server if possible
-    fact = ChatServerFactory()
-    reactor.listenTCP(8000, fact,interface='127.0.0.1')
-except CannotListenError:
-    # else create a client
-    fact = ChatClientFactory()
-    reactor.connectTCP('127.0.0.1',8000, fact)
-
-runWithProtocol(lambda: fact.prompter)
