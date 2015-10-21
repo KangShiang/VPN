@@ -16,9 +16,6 @@ print "The prime value is: " + str(p)
 g = 2
 print "The generator value is: " + str(g)
 
-# TODO: Take out later
-mode = "Client"
-
 # Read user input values for K_AB
 print "Please enter a secret value (K_AB):"
 inputVal = sys.stdin.readline()
@@ -55,7 +52,7 @@ def getHalfDiffieHellman():
     return ( a, gaModP )
 
 # Function to establish mutual authentication
-def mutualAuthentication():
+def mutualAuthentication(mode):
     # Server and client should do different things
     # NOTE: mode is value in chat_app.py (adjust later)
     if mode is "Server":
