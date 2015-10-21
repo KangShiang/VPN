@@ -53,6 +53,9 @@ class EchoClient(protocol.Protocol):
             data = decrypt(data)
             received = True
         self.factory.app.print_message("Other: " + data)
+    
+    def connectionLost(self, reason):
+        App.get_running_app().stop()
 
 
 class EchoFactory(protocol.ClientFactory):
@@ -68,18 +71,6 @@ class EchoFactory(protocol.ClientFactory):
 
     def clientConnectionFailed(self, conn, reason):
         self.app.print_message("connection failed")
-        App.get_running_app().stop()
-
-class EchoFactoryServ(protocol.Factory):
-    protocol = EchoClient
-    
-    def __init__(self, app):
-        self.app = app
-    
-    def connectionLost(self, reason):
-        App.get_running_app().stop()
-    
-    def connectionFailed(self, reason):
         App.get_running_app().stop()
 
 from kivy.app import App
@@ -171,12 +162,14 @@ class ChatPage(Screen):
     def on_enter(self):
         print port
         if mode == "Server":
+            self.print_message("I am the SERVER")
             try:
-                connector = reactor.listenTCP(int(port), EchoFactoryServ(self), interface=address)#EchoFactory(self), interface=address)
+                connector = reactor.listenTCP(int(port), EchoFactory(self), interface=address)
             except CannotListenError:
                 print "Server Already Created"
                 App.get_running_app().stop()
         else:
+            self.print_message("I am the CLIENT")
             connector = reactor.connectTCP(address, int(port), EchoFactory(self))
 
     def quit(self,*args):
@@ -235,7 +228,7 @@ class ChatPage(Screen):
 # A simple kivy App, with a textbox to enter messages, and
 # a large label to display all the messages received from
 # the server
-class TwistedClientApp(App):
+class TwistedChatApp(App):
     connection = None
 
     def build(self):
@@ -255,11 +248,6 @@ class TwistedClientApp(App):
         self.layout.add_widget(self.textbox)
         return self.layout
 
-    #def connect_to_server(self):
-        #try:
-           # reactor.listenTCP(8000, EchoFactory(self))
-        #except:
-            #reactor.connectTCP('localhost', 8000, EchoFactory(self))
 
 if __name__ == '__main__':
-    TwistedClientApp().run()
+    TwistedChatApp().run()
