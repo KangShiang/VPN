@@ -10,16 +10,12 @@ from kivy.uix.popup import Popup
 from kivy.properties import StringProperty
 from kivy.lang import Builder
 from kivy.app import App
-from kivy.support import install_twisted_reactor
-install_twisted_reactor()
 
 kivy.require('1.0.6')  # replace with your current kivy version !
-from twisted.internet.error import CannotListenError
-from twisted.conch.stdio import runWithProtocol
 from kivy.app import App
 from kivy.uix.label import Label
-from twisted.internet import reactor
 import vpn
+reactor = vpn.reactor
 
 Builder.load_string('''
 <ScrollableLabel>:
