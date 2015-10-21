@@ -19,7 +19,7 @@ class EchoClient(protocol.Protocol):
         self.factory.app.on_connection(self.transport)
 
     def dataReceived(self, data):
-        self.factory.app.print_message("You: " + data)
+        self.factory.app.print_message("Other: " + data)
 
 
 class EchoFactory(protocol.ClientFactory):
@@ -30,9 +30,12 @@ class EchoFactory(protocol.ClientFactory):
 
     def clientConnectionLost(self, conn, reason):
         self.app.print_message("connection lost")
+        App.get_running_app().stop()
+        
 
     def clientConnectionFailed(self, conn, reason):
         self.app.print_message("connection failed")
+        App.get_running_app().stop()
 
 
 from kivy.app import App
