@@ -1,3 +1,6 @@
+from kivy.support import install_twisted_reactor
+install_twisted_reactor()
+
 from twisted.python.failure import Failure
 
 from twisted.internet.protocol import Protocol, Factory
@@ -5,6 +8,8 @@ from twisted.internet.protocol import ClientFactory
 from twisted.internet.error import CannotListenError
 from twisted.conch.recvline import HistoricRecvLine
 from twisted.conch.stdio import runWithProtocol
+
+from twisted.internet import reactor
 
 class ConsolePrompter(HistoricRecvLine, object):
     ps = [">>: "]
@@ -162,8 +167,8 @@ class ChatClientFactory(ClientFactory):
             echoer.transport.write(message + "\r\n")
 
 def start_server_client(kivyobj=None,reactor=None):
-    #if not reactor:
-    #    from twisted.internet import reactor
+    if not reactor:
+        from twisted.internet import reactor
     try:
         # Create a server if possible
         fact = ChatServerFactory()
@@ -175,7 +180,7 @@ def start_server_client(kivyobj=None,reactor=None):
         fact.kivyobj = kivyobj
         reactor.connectTCP('127.0.0.1',8000, fact)
 
-    runWithProtocol(lambda: fact.prompter)
+    #runWithProtocol(lambda: fact.prompter)
 
 if __name__ == "__main__":
     start_server_client()
