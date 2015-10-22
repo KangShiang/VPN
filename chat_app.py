@@ -27,6 +27,16 @@ def encrypt_auth( data, key ):
 def decrypt_auth( data, key ):
     return aes.decrypt(msg=data, key=key)
 
+scheduled_loss = False
+timer_connection = None
+def timer_callback(dt):
+    global timer_connection
+    global scheduled_loss
+    scheduled_loss = True
+    print "KILL CONNECTION"
+    timer_connection.loseConnection()
+    Clock.unschedule(timer_callback)
+
 # Get half of Diffie-Hellman
 def getHalfDiffieHellman():
     # Generate random pseudorandom number for a
@@ -231,6 +241,7 @@ from kivy.uix.textinput import TextInput
 #A simple Client that send messages to the echo server
 from twisted.internet import reactor, protocol
 from twisted.internet.error import CannotListenError
+from kivy.clock import Clock
 
 # Variables for connection establishment
 G_connection = ""
@@ -289,7 +300,22 @@ class EchoClient(protocol.Protocol):
                 
 
     def connectionLost(self, reason):
-        App.get_running_app().stop()
+        global scheduled_loss
+        global received
+        global connected
+
+        connected = False
+        if mode == 'Server':
+            Clock.unschedule(timer_callback)
+            received = False
+            connected = False
+            self.factory.app.print_message("connection lost... regen time!")
+            if not scheduled_loss:
+                App.get_running_app().stop()
+        scheduled_loss = False
+        ###
+        #Time to renegotiate
+        ###
 
 
 class EchoFactory(protocol.ClientFactory):
@@ -299,8 +325,15 @@ class EchoFactory(protocol.ClientFactory):
         self.app = app
 
     def clientConnectionLost(self, conn, reason):
+        global connected
+        connected = False
         self.app.print_message("connection lost")
-        App.get_running_app().stop()
+        ### HUGO WEAVING
+        ### REGENERATION     
+
+        ### REGENERATION BABY
+        ### HYDRA
+        #App.get_running_app().stop()
 
     def clientConnectionFailed(self, conn, reason):
         self.app.print_message("connection failed")
@@ -440,6 +473,12 @@ class ChatPage(Screen):
         connected = True
 
         self.connection = connection
+        
+         # Server demands after a certain amount of time that things be renegotiated
+        global timer_connection
+        timer_connection = self.connection
+        if mode == "Server":
+            Clock.schedule_interval(timer_callback, 10)
 
     def send_message(self):
         msg = self.message.text
