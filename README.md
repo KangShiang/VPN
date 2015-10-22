@@ -1,5 +1,7 @@
 # VPN
 
+'''Note:''' Source code in `master` branch
+
 A 'VPN' developed to follow [these instructions](http://courses.ece.ubc.ca/cpen442/assignments/vpn.html "CPEN 442").
 
 See instructions on how to [export this file to PDF](EXPORT.md).
