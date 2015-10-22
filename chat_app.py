@@ -272,8 +272,15 @@ class EchoClient(protocol.Protocol):
         if is_authenticated:
             print str(datetime.utcnow()) + " -- Decrypting Message:"
             print data
+            mac = data[-64:]
+            data = data[:-64]
             data = aes.decrypt(data, str(k_s))
-            self.factory.app.print_message("Other: " + data)
+            hmac = aes.hmac(data, str(k_s))
+
+            if mac == hmac:
+                self.factory.app.print_message("Other: " + data)
+            else:
+                self.factory.app.print_message("integrity Check fails")
         else:
             if mode == "Server":
                 global is_client_initializing
@@ -493,10 +500,11 @@ class ChatPage(Screen):
             self.print_message("Me: " + msg)
             if msg and self.connection:
                 text = aes.encrypt(msg, str(k_s))
+                hmac = aes.hmac(msg, str(k_s))
                 print str(datetime.utcnow()) + " -- Encrypthing messsages"
                 print msg
                 print ""
-                self.connection.write(text)
+                self.connection.write(text + hmac)
                 self.message.text = ""
         #except:
         #    self.print_message("Please wait for a connection.")
