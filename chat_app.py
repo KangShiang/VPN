@@ -530,14 +530,6 @@ class ChatPage(Screen):
             connector = reactor.connectTCP(address, int(port), EchoFactory(self))
 
     def quit(self,*args):
-        try:
-            self.connection
-            print "DISCONNECTOR"
-            self.connection.loseConnection()
-            if connector:
-                connector.disconnect()
-        except:
-            pass
         reactor.stop()
         #self.manager.current = "InfoPage"
         App.get_running_app().stop()
