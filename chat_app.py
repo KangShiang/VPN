@@ -280,7 +280,7 @@ class EchoClient(protocol.Protocol):
             if mac == hmac:
                 self.factory.app.print_message("Other: " + data)
             else:
-                self.factory.app.print_message("integrity Check fails")
+                self.factory.app.print_message("Integrity Check fails")
         else:
             if mode == "Server":
                 global is_client_initializing
