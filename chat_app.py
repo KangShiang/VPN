@@ -32,9 +32,13 @@ timer_connection = None
 def timer_callback(dt):
     global timer_connection
     global scheduled_loss
+    global k_s 
+    k_s = ""
+    global is_authenticated
+    is_authenticated = False 
     scheduled_loss = True
     print "KILL CONNECTION"
-    timer_connection.loseConnection()
+    #timer_connection.loseConnection()
     Clock.unschedule(timer_callback)
 
 # Get half of Diffie-Hellman
@@ -303,9 +307,10 @@ class EchoClient(protocol.Protocol):
         global scheduled_loss
         global received
         global connected
-
+        global k_s
         connected = False
         if mode == 'Server':
+            k_s = ""
             Clock.unschedule(timer_callback)
             received = False
             connected = False
@@ -313,9 +318,10 @@ class EchoClient(protocol.Protocol):
             if not scheduled_loss:
                 App.get_running_app().stop()
         scheduled_loss = False
-        ###
-        #Time to renegotiate
-        ###
+        #if mode == 'Server':
+        #    ###
+        #    #Time Server to renegotiate
+        #    ###
 
 
 class EchoFactory(protocol.ClientFactory):
@@ -326,11 +332,16 @@ class EchoFactory(protocol.ClientFactory):
 
     def clientConnectionLost(self, conn, reason):
         global connected
+        global k_s
         connected = False
+        k_s = ""
         self.app.print_message("connection lost")
+        self.app.print_message(str(datetime.utcnow()) + " -- I am connecting to the server")
+        self.app.print_message(str(datetime.utcnow()) + " -- Sending \"ClientInit\",ClientNounce")
+        client_initiate(conn=conn)
         ### HUGO WEAVING
         ### REGENERATION     
-
+        # When client loses the connection, expires on client side
         ### REGENERATION BABY
         ### HYDRA
         #App.get_running_app().stop()
@@ -477,8 +488,8 @@ class ChatPage(Screen):
          # Server demands after a certain amount of time that things be renegotiated
         global timer_connection
         timer_connection = self.connection
-        if mode == "Server":
-            Clock.schedule_interval(timer_callback, 10)
+        #if mode == "Server":
+        #    Clock.schedule_interval(timer_callback, 10)
 
     def send_message(self):
         msg = self.message.text
