@@ -5,31 +5,20 @@ import base64
 # relevant urls
 # http://eli.thegreenplace.net/2010/06/25/aes-encryption-of-files-in-python-with-pycrypto/
 # http://stackoverflow.com/questions/14716338/pycrypto-how-does-the-initialization-vector-work
-#  
+# http://stackoverflow.com/questions/12524994/encrypt-decrypt-using-pycrypto-aes-256 
 
 key = '0123456789abcdef'
 mode = AES.MODE_CBC
 text = 'python does some weird string comparison'
 
+# pads the string s to make its length a multiple of 16
+# how the padding works:
+def pad(s):
+  return s + (16 - len(s) % 16) * chr(16 - len(s) % 16)
 
-def pad(data):
-  if len(data) % 16 == 0:
-    return data
-
-  databytes = bytearray(data)
-  padding_required = 15 - (len(databytes) % 16)
-  databytes.extend(b'\x80')
-  databytes.extend(b'\x00' * padding_required)
-  return bytes(databytes)
-
-def unpad(data):
-  if not data:
-    return data
-  data = data.rstrip(b'\x00')
-  if data[-1] == 128: # b'\x80'[0]:
-    return data[:-1]
-  else:
-    return data
+# undoes the padding
+def unpad(s):
+  return s[:-ord(s[len(s)-1:])]
 
 def encrypt(msg, key):
   msg2 = pad(msg)
