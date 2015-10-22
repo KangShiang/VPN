@@ -3,6 +3,7 @@ import json
 import random
 import sys
 import aes
+from datetime import datetime
 """ Prime (p) and generator (g) are public
     Generator is typically 2 or 5
     Values of p and g are taken from:
@@ -48,11 +49,16 @@ def client_initiate(conn):
     sendVal.append( str( myNonce ) )
     sendVal = json.dumps( sendVal )
     conn.write(sendVal)
+    print str(datetime.utcnow()) + " -- Sending Nounce to Server"
+    print sendVal
+    print ""
     return
 
 # The server challenge response message to the client
 def server_reply(conn, recvMsg):
+    print str(datetime.utcnow()) + " -- Input From Client:"
     print recvMsg
+    print ""
     try:
         recvMsg, recvNonce = json.loads( recvMsg )
         #obj = json.loads( recvMsg )
@@ -65,7 +71,6 @@ def server_reply(conn, recvMsg):
     if recvMsg != "ClientInit":
         "Did not receive correct initialization message"
         return
-    print recvMsg
     b, gbModP = getHalfDiffieHellman()
 
     # Generate nonce
@@ -85,18 +90,20 @@ def server_reply(conn, recvMsg):
     msg.append( str( recvNonce ) )
     msg.append( str( gbModP ) )
     # Dump the msg list into a json string
-    print k_ab
-    print inputVal
     msg = json.dumps( msg )
     sendVal.append( encrypt_auth( data=msg, key=k_ab ) )
     # Send the entire message
     sendVal = json.dumps( sendVal )
-    "Server"
+    print str(datetime.utcnow()) + " -- Sending E{\"Server\", ClientNounce, g^b mod p, K_ab}, ServerNounc"
     print sendVal
+    print ""
     return sendVal
 
 # The client's reply message to the server's challenge request
 def client_reply(recvMsg):
+    print str(datetime.utcnow()) + " -- Receiving E{\"Server\", ClientNounce, g^b mod p, K_ab}, ServerNounc"
+    print recvMsg
+    print ""
     client = ""
     my = ""
     serverNonce = ""
@@ -264,10 +271,10 @@ class EchoClient(protocol.Protocol):
                     connection = self.factory.app.connection
                     rslt = server_reply(conn=connection,recvMsg=data)
                     is_client_initializing = True;
-                    self.factory.app.print_message("Client sent Nounce")
+                    self.factory.app.print_message(str(datetime.utcnow()) + " -- Received \"ClientInit\",ClientNounce from client")
                     connection.write(rslt)
                 else:
-                    self.factory.app.print_message("Authentication is done")    
+                    self.factory.app.print_message(str(datetime.utcnow()) + " -- Authentication is done")    
                     server_recv(data)
                     is_authenticated = True
                     is_client_initializing = False;
@@ -276,8 +283,8 @@ class EchoClient(protocol.Protocol):
                 connection = self.factory.app.connection
                 rslt = client_reply(recvMsg=data)
                 is_authenticated = True
-                self.factory.app.print_message("Server Sent Nounce")
-                self.factory.app.print_message("Authentication is done")
+                self.factory.app.print_message(str(datetime.utcnow()) + " -- Server Sent Nounce")
+                self.factory.app.print_message(str(datetime.utcnow()) + " -- Authentication is done")
                 connection.write(rslt)
                 
 
@@ -344,8 +351,7 @@ def set_secret(instance, *args):
     m.update( instance.text )
     inputVal = instance.text
     k_ab = m.hexdigest()
-    bit = sys.getsizeof(k_ab)
-    print "Bit long =" + str(bit)
+
 
 class InfoPage(Screen):
 
@@ -393,13 +399,13 @@ class InfoPage(Screen):
 
 class ChatPage(Screen):
     def on_enter(self):
-        print port
         if mode == "Server":
             self.print_message("I am the SERVER")
             try:
                 connector = reactor.listenTCP(int(port), EchoFactory(self), interface=address)
             except CannotListenError:
-                print "Server Already Created"
+                print str(datetime.utcnow()) + " -- Server Already Created"
+                print ""
                 App.get_running_app().stop()
         else:
             self.print_message("I am the CLIENT")
@@ -423,9 +429,10 @@ class ChatPage(Screen):
         global connected
         global next_button
         if mode == "Server":
-            self.print_message("I see client is connecting")   
+            self.print_message(str(datetime.utcnow()) + " -- I see client is connecting")   
         else: 
-            self.print_message("I am connecting to the server")
+            self.print_message(str(datetime.utcnow()) + " -- I am connecting to the server")
+            self.print_message(str(datetime.utcnow()) + " -- Sending \"ClientInit\",ClientNounce")
             client_initiate(conn=connection)
 
         if connected:
@@ -464,6 +471,7 @@ class ChatPage(Screen):
                            width=600, height=40)
         self.send_button = Button(text="Send", pos_hint={'center_x': .90, 'center_y': .10}, size_hint=(None, None), width=120, height=40)
         self.send_button.bind(on_press=self.send_with_auth)
+        self.add_widget(self.next_button)
         self.add_widget(self.console)
         self.add_widget(self.quit_button)
         self.add_widget(self.message)
