@@ -42,7 +42,7 @@ def receive():
 def getHalfDiffieHellman():
     # Generate random pseudorandom number for a
     # Arbitrary values here (2^2500 gives a number with the number of digits > 618)
-    a = random.randint( 2500, 5000 )
+    a = random.randint( 4800, 5000 )
 
     # Generate half of the Diffie-Hellman exchange
     gaModP = ( g**a ) % p
@@ -220,8 +220,11 @@ def server_reply(conn, recvMsg):
 
     # Generate nonce
     # Server always gets an even number
+    global server_Nounce
+    global temp_b 
+    temp_b = b
     serverNonce = random.randrange( 0, 100000000, 2 )
-
+    server_Nounce = serverNonce
     # Encrypt and send a challenge response
     sendVal = []
     sendVal.append( str( serverNonce ) )
@@ -280,8 +283,11 @@ def client_reply(recvMsg):
 
     a, gaModP = getHalfDiffieHellman()
     # Determine the session key
+    global k_s
     k_s = ( int(gbModP) ** a ) % p
-
+    m = hashlib.md5()
+    m.update(str(k_s))
+    k_s = m.hexdigest()
     # "Forget" the value of "a" so that attackers can't find the value in the future
     a = None
     print k_ab
@@ -298,6 +304,35 @@ def client_reply(recvMsg):
     print sendVal
     # Send the values
     return sendVal
+
+def server_recv(recvMsg):
+    global k_s
+    recvMsg = decrypt_auth( recvMsg, k_ab )
+    try:
+        msg, serverNonce, gaModP = json.loads( recvMsg )
+    except TypeError:
+        # The loaded values were not correct
+        print "The received values were not in the correct format"
+        return
+    print msg
+    print 
+    # Check the message contents. If values aren't what we expect
+    # then stop the mutual authentication
+    if msg != "Client":
+        print "Authentication failed"
+        return
+
+    if str(serverNonce) != str(server_Nounce):
+        print "Authentication failed, serverNonce"
+        return
+
+    # Determine the session key
+    k_s = ( int(gaModP) ** temp_b ) % p
+    m = hashlib.md5()
+    m.update(str(k_s))
+    k_s = m.hexdigest()
+    global temp_b
+    temp_b = ""
 # Don't use the same keypair for signing as you do encryption
 # Session keys limit the amount of data encrypted with any particular key
 # - Also limits the damage if one session key is compromised
@@ -351,6 +386,10 @@ received = False
 is_authenticated = False
 is_client_initializing = False
 myNonce = ""
+k_s = ""
+server_Nounce =""
+temp_b = ""
+next_button = False
 def encrypt(data):
     # called on send
     return data
@@ -360,27 +399,18 @@ def decrypt(data):
     return data
 
 class EchoClient(protocol.Protocol):
-    def handle_first_out(self):
-        # Called on connection made
-        # can send message with self.transport.write("str") 
-        pass
-    
-    def handle_first_in(self,data):
-        # called on first received data
-        return data
 
     def connectionMade(self):
         self.factory.app.on_connection(self.transport)
-        self.handle_first_out()
 
     def dataReceived(self, data):
         if is_authenticated:
-            global received
-            if not received:
-                data = self.handle_first_in(data)
-            else:
-                data = decrypt(data)
-                received = True
+            data = aes.decrypt(data, str(k_s))
+            
+            print "Decrypted Message:"
+            print data
+            print str(k_s)
+            
             self.factory.app.print_message("Other: " + data)
         else:
             if mode == "Server":
@@ -389,20 +419,23 @@ class EchoClient(protocol.Protocol):
                 if is_client_initializing == False:
                     connection = self.factory.app.connection
                     rslt = server_reply(conn=connection,recvMsg=data)
-                    self.factory.app.print_message("Other: " + data)
-                    connection.write(rslt)
                     is_client_initializing = True;
+                    self.factory.app.print_message("Client sent Nounce")
+                    connection.write(rslt)
                 else:
-                    self.factory.app.print_message("Other: " + data)
+                    self.factory.app.print_message("Authentication is done")    
+                    server_recv(data)
                     is_authenticated = True
                     is_client_initializing = False;
 
             else:
                 connection = self.factory.app.connection
-                self.factory.app.print_message("Other: " + data)
                 rslt = client_reply(recvMsg=data)
                 is_authenticated = True
+                self.factory.app.print_message("Server Sent Nounce")
+                self.factory.app.print_message("Authentication is done")
                 connection.write(rslt)
+                
 
                 
     def connectionLost(self, reason):
@@ -433,9 +466,10 @@ from kivy.uix.boxlayout import BoxLayout
 Builder.load_string('''
 <ScrollableLabel>:
     Label:
+        multiline: True
         size_hint_y: None
         height: self.texture_size[1]
-        text_size: self.width, None
+        text_size: 700, None
         text: root.text
 ''')
 
@@ -534,6 +568,10 @@ class ChatPage(Screen):
         #self.manager.current = "InfoPage"
         App.get_running_app().stop()
 
+    def next(self,*args):
+        global next_button
+        next_button = True
+
     def send_with_auth(self,*args):
         # Ensure Mutual Authentication Here!
         if is_authenticated:
@@ -541,32 +579,36 @@ class ChatPage(Screen):
         
     def on_connection(self, connection):
         global connected
+        global next_button
         if mode == "Server":
             self.print_message("I see client is connecting")
             
-        else:
-           self.print_message("I am connecting to the server")
-           client_initiate(conn=connection)
+        else: 
+            self.print_message("I am connecting to the server")
+            client_initiate(conn=connection)
 
         if connected:
             App.get_running_app().stop()
         connected = True
         #mutualAuthentication(mode=mode)
         normalOperation()
-        self.print_message("connected succesfully!")
         self.connection = connection
 
     def send_message(self):
         msg = self.message.text
-        try:
+        if True:
+        #try:
             self.connection
             self.print_message("Me: " + msg)
             if msg and self.connection:
-                self.message.text = encrypt(self.message.text)
-                self.connection.write(str(self.message.text))
+                text = aes.encrypt(msg, str(k_s))
+                print "Encrypthing messsagesss"
+                print str(k_s)
+                print text
+                self.connection.write(text)
                 self.message.text = ""
-        except:
-            self.print_message("Please wait for a connection.")
+        #except:
+        #    self.print_message("Please wait for a connection.")
 
     def print_message(self, msg):
         self.console.text += msg + "\n"
@@ -575,7 +617,9 @@ class ChatPage(Screen):
         super (ChatPage,self).__init__(**kwargs)
         self.quit_button = Button(text="Quit", pos_hint={'center_x': .05, 'center_y': .95}, size_hint=(None, None), width=40, height=40)
         self.quit_button.bind(on_press=self.quit)
-        self.console = ScrollableLabel(text="",pos_hint={'center_x': .52, 'center_y': .4}, width=700)
+        self.next_button = Button(text="Next", pos_hint={'center_x': .95, 'center_y': .95}, size_hint=(None, None), width=40, height=40)
+        self.next_button.bind(on_press=self.next)
+        self.console = ScrollableLabel(text="",pos_hint={'center_x': .52, 'center_y': .4}, width=10)
         self.message = TextInput(multiline=True, pos_hint={'center_x': .45, 'center_y': .10}, size_hint=(None, None),
                            width=600, height=40)
         self.send_button = Button(text="Send", pos_hint={'center_x': .90, 'center_y': .10}, size_hint=(None, None), width=120, height=40)
