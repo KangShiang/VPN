@@ -131,11 +131,8 @@ def client_reply(recvMsg):
 
     try:
         msg, clientNonce, gbModP = json.loads( decrypt_auth( encryptedData, k_ab ) )
-        print "Checking..."
-        print msg
         client = str(clientNonce)
         my = str(myNonce)
-        print client == my
     except TypeError:
         # The loaded values were not correct
         print "The received values were not in the correct format"
@@ -162,8 +159,6 @@ def client_reply(recvMsg):
     k_s = m.hexdigest()
     # "Forget" the value of "a" so that attackers can't find the value in the future
     a = None
-    print k_ab
-    print inputVal
     # Encrypt the different values
     msg = []
     msg.append( "Client" )
@@ -173,11 +168,16 @@ def client_reply(recvMsg):
     sendVal = []
     sendVal.append( encrypt_auth( data=msg, key=k_ab ) )
     sendVal = json.dumps( sendVal )
+    print str(datetime.utcnow()) + " -- Sending E{\"Client\", ServerNounce, g^a mod p, K_ab}"
     print sendVal
+    print ""
     # Send the values
     return sendVal
 
 def server_recv(recvMsg):
+    print str(datetime.utcnow()) + " -- Received E{\"Client\", ServerNounce, g^a mod p, K_ab}"
+    print recvMsg
+    print ""
     global k_s
     recvMsg = decrypt_auth( recvMsg, k_ab )
     try:
@@ -186,8 +186,6 @@ def server_recv(recvMsg):
         # The loaded values were not correct
         print "The received values were not in the correct format"
         return
-    print msg
-    print 
     # Check the message contents. If values aren't what we expect
     # then stop the mutual authentication
     if msg != "Client":
@@ -272,12 +270,9 @@ class EchoClient(protocol.Protocol):
     def dataReceived(self, data):
         global is_authenticated
         if is_authenticated:
-            data = aes.decrypt(data, str(k_s))
-            
-            print "Decrypted Message:"
+            print str(datetime.utcnow()) + " -- Decrypting Message:"
             print data
-            print str(k_s)
-            
+            data = aes.decrypt(data, str(k_s))
             self.factory.app.print_message("Other: " + data)
         else:
             if mode == "Server":
@@ -293,7 +288,6 @@ class EchoClient(protocol.Protocol):
                     server_recv(data)
                     is_authenticated = True
                     is_client_initializing = False;
-
             else:
                 connection = self.factory.app.connection
                 rslt = client_reply(recvMsg=data)
@@ -499,9 +493,9 @@ class ChatPage(Screen):
             self.print_message("Me: " + msg)
             if msg and self.connection:
                 text = aes.encrypt(msg, str(k_s))
-                print "Encrypthing messsagesss"
-                print str(k_s)
-                print text
+                print str(datetime.utcnow()) + " -- Encrypthing messsages"
+                print msg
+                print ""
                 self.connection.write(text)
                 self.message.text = ""
         #except:
