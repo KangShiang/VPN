@@ -9,7 +9,6 @@ import base64
 
 key = '0123456789abcdef'
 mode = AES.MODE_CBC
-text = 'python does some weird string comparison'
 
 # pads the string s to make its length a multiple of 16
 # how the padding works:
@@ -20,19 +19,16 @@ def pad(s):
 def unpad(s):
   return s[:-ord(s[len(s)-1:])]
 
+# Encrypts the msg parameter with the key parameter
 def encrypt(msg, key):
   msg2 = pad(msg)
   iv = Crypto.Random.OSRNG.posix.new().read(AES.block_size)
-  print("iv: " + iv )
   mode = AES.MODE_CBC
   encryptor = AES.new(key, mode, iv)
   ciphertext = encryptor.encrypt(msg2)
-  print("ctext: " + ciphertext)
   return base64.b64encode(iv + ciphertext)
 
-
-print(encrypt(text, key))
-
+# Decrypts the msg parameter with the key parameter
 def decrypt(msg, key):
   msg2 = base64.b64decode(msg)
   # get iv from first part of msg
@@ -42,9 +38,3 @@ def decrypt(msg, key):
   plaintext = decryptor.decrypt(msg2[16:])
   print("ptext: " + plaintext)
   return unpad(plaintext)
-
-print("decrypting: ")
-
-print(decrypt(encrypt(text, key), key))
-
-
