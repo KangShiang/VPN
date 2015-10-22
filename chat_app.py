@@ -2,7 +2,7 @@ import hashlib
 import json
 import random
 import sys
-
+import aes
 """ Prime (p) and generator (g) are public
     Generator is typically 2 or 5
     Values of p and g are taken from:
@@ -18,19 +18,16 @@ print "The generator value is: " + str(g)
 
 # Read user input values for K_AB
 print "Please enter a secret value (K_AB):"
-inputVal = ""
 # Hash the entered value
-m = hashlib.sha512()
-m.update( inputVal )
-k_ab = m.hexdigest()
+inputVal = ""
 
 def encrypt_auth( data, key ):
     # TODO: Do stuff here
-    return data
+    return aes.encrypt(msg=data, key=key)
 
 def decrypt_auth( data, key ):
     # TODO: Do stuff here
-    return data
+    return aes.decrypt(msg=data, key=key)
 
 def send( sendList ):
     # TODO: Do stuff here
@@ -45,7 +42,7 @@ def receive():
 def getHalfDiffieHellman():
     # Generate random pseudorandom number for a
     # Arbitrary values here (2^2500 gives a number with the number of digits > 618)
-    a = random.randint( 2500, 50000 )
+    a = random.randint( 2500, 5000 )
 
     # Generate half of the Diffie-Hellman exchange
     gaModP = ( g**a ) % p
@@ -90,7 +87,6 @@ def mutualAuthentication(mode):
         # Dump the msg list into a json string
         msg = json.dumps( msg )
         sendVal.append( encrypt( msg, k_ab ) )
-
         # Send the entire message
         sendVal = json.dumps( sendVal )
         send( sendVal )
@@ -236,7 +232,8 @@ def server_reply(conn, recvMsg):
     msg.append( str( recvNonce ) )
     msg.append( str( gbModP ) )
     # Dump the msg list into a json string
-    print msg
+    print k_ab
+    print inputVal
     msg = json.dumps( msg )
     sendVal.append( encrypt_auth( data=msg, key=k_ab ) )
     # Send the entire message
@@ -287,7 +284,8 @@ def client_reply(recvMsg):
 
     # "Forget" the value of "a" so that attackers can't find the value in the future
     a = None
-
+    print k_ab
+    print inputVal
     # Encrypt the different values
     msg = []
     msg.append( "Client" )
@@ -464,8 +462,14 @@ def set_port(instance, *args):
     port = instance.text
 
 def set_secret(instance, *args):
+    global k_ab
     global inputVal
+    m = hashlib.md5()
+    m.update( instance.text )
     inputVal = instance.text
+    k_ab = m.hexdigest()
+    bit = sys.getsizeof(k_ab)
+    print "Bit long =" + str(bit)
 
 class InfoPage(Screen):
 
@@ -579,7 +583,7 @@ class ChatPage(Screen):
         super (ChatPage,self).__init__(**kwargs)
         self.quit_button = Button(text="Quit", pos_hint={'center_x': .05, 'center_y': .95}, size_hint=(None, None), width=40, height=40)
         self.quit_button.bind(on_press=self.quit)
-        self.console = ScrollableLabel(text="",pos_hint={'center_x': .52, 'center_y': .4})
+        self.console = ScrollableLabel(text="",pos_hint={'center_x': .52, 'center_y': .4}, width=700)
         self.message = TextInput(multiline=True, pos_hint={'center_x': .45, 'center_y': .10}, size_hint=(None, None),
                            width=600, height=40)
         self.send_button = Button(text="Send", pos_hint={'center_x': .90, 'center_y': .10}, size_hint=(None, None), width=120, height=40)
