@@ -16,27 +16,15 @@ print "The prime value is: " + str(p)
 g = 2
 print "The generator value is: " + str(g)
 
-# Read user input values for K_AB
-print "Please enter a secret value (K_AB):"
-# Hash the entered value
-inputVal = ""
+inputVal = None
 
+# Calls the encrypt function in the aes.py file
 def encrypt_auth( data, key ):
-    # TODO: Do stuff here
     return aes.encrypt(msg=data, key=key)
 
+# Calls the decrypt function in the aes.py file
 def decrypt_auth( data, key ):
-    # TODO: Do stuff here
     return aes.decrypt(msg=data, key=key)
-
-def send( sendList ):
-    # TODO: Do stuff here
-    pass
-
-def receive():
-    # TODO: Do stuff here
-    receivedMsg = []
-    return receivedMsg
 
 # Get half of Diffie-Hellman
 def getHalfDiffieHellman():
@@ -48,146 +36,7 @@ def getHalfDiffieHellman():
     gaModP = ( g**a ) % p
     return ( a, gaModP )
 
-# Function to establish mutual authentication
-def mutualAuthentication(mode):
-    # Server and client should do different things
-    # NOTE: mode is value in chat_app.py (adjust later)
-    if mode is "Server":
-        # Server node
-
-        # Wait for request from client
-        # None of this information will be encrypted
-        try:
-            recvMsg, clientNonce = json.loads( recvMsg )
-        except TypeError:
-            # The loaded values were not correct
-            print "The received values were not in the correct format"
-            return
-
-        # Check the initialization message
-        if recvMsg is not "ClientInit":
-            "Did not receive correct initialization message"
-            return
-
-        b, gbModP = getHalfDiffieHellman()
-
-        # Generate nonce
-        # Server always gets an even number
-        myNonce = random.randrange( 0, 100000000, 2 )
-
-        # Encrypt and send a challenge response
-        sendVal = []
-        sendVal.append( str( myNonce ) )
-
-        # msg is the message to encrypt
-        msg = []
-        msg.append( "Server" )
-        msg.append( str( clientNonce ) )
-        msg.append( str( gbModP ) )
-        # Dump the msg list into a json string
-        msg = json.dumps( msg )
-        sendVal.append( encrypt( msg, k_ab ) )
-        # Send the entire message
-        sendVal = json.dumps( sendVal )
-        send( sendVal )
-
-        # Wait for client's response
-        recvMsg = receive()
-
-        # TODO: Verify client's response
-        recvMsg = decrypt( recvMsg, k_ab )
-        try:
-            msg, serverNonce, gaModP = json.loads( recvMsg )
-        except TypeError:
-            # The loaded values were not correct
-            print "The received values were not in the correct format"
-            return
-
-        # Check the message contents. If values aren't what we expect
-        # then stop the mutual authentication
-        if msg is not "Client":
-            print "Authentication failed"
-            return
-
-        if serverNonce is not myNonce:
-            print "Authentication failed"
-            return
-
-        # Determine the session key
-        k_s = ( gaModP ** b ) % p
-
-        # "Forget" the value of "b" so that attackers can't find the value in the future
-        b = None
-    else:
-        # Client Mode
-
-        # Generate nonce
-        # Client always gets an odd number
-        myNonce = random.randrange( 1, 100000000, 2 )
-
-        # Not sure what the message is to send or what's the best way
-        # of putting the message and the nonce together. For the time
-        # being, just concatenating the values together
-        sendVal = []
-        sendVal.append( "ClientInit" )
-        sendVal.append( str( myNonce ) )
-        sendVal = json.dumps( sendVal )
-        send( sendVal )
-
-        recvMsg = receive()
-        try:
-            serverNonce, encryptedData = json.loads( recvMsg )
-        except TypeError:
-            # The loaded values were not correct
-            print "The received values were not in the correct format"
-            return
-
-        try:
-            msg, clientNonce, gbModP = json.loads( decrypt( encryptedData, k_ab ) )
-        except TypeError:
-            # The loaded values were not correct
-            print "The received values were not in the correct format"
-            return
-
-        # Check the message contents. If values aren't what we expect
-        # then stop the mutual authentication
-        # Check the sent message
-        if msg is not "Server":
-            print "Authentication failed"
-            return
-
-        # Check the received nonce
-        if clientNonce is not myNonce:
-            print "Authentication failed"
-            return
-
-        a, gaModP = getHalfDiffieHellman()
-        print gaModP
-
-        # Determine the session key
-        k_s = ( gbModP ** a ) % p
-
-        # "Forget" the value of "a" so that attackers can't find the value in the future
-        a = None
-
-        # Encrypt the different values
-        msg = []
-        msg.append( "Client" )
-        msg.append( str( serverNonce ) )
-        msg.append( str( gaModP ) )
-        msg = json.dumps( msg )
-        sendVal = []
-        sendVal.append( encrypt_auth( data=msg, key=k_ab ) )
-        sendVal = json.dumps( sendVal )
-
-        # Send the values
-        send( sendVal )
-
-# TODO (This functionality is currently in chat_app.py)
-def normalOperation():
-    # TODO Implement timeout value
-    return
-
+# Initiates the first message from client to server
 def client_initiate(conn):
     global myNonce
     myNonce = int(random.randrange( 1, 100000000, 2 ))
@@ -201,6 +50,7 @@ def client_initiate(conn):
     conn.write(sendVal)
     return
 
+# The server challenge response message to the client
 def server_reply(conn, recvMsg):
     print recvMsg
     try:
@@ -245,6 +95,7 @@ def server_reply(conn, recvMsg):
     print sendVal
     return sendVal
 
+# The client's reply message to the server's challenge request
 def client_reply(recvMsg):
     client = ""
     my = ""
@@ -390,13 +241,6 @@ k_s = ""
 server_Nounce =""
 temp_b = ""
 next_button = False
-def encrypt(data):
-    # called on send
-    return data
-
-def decrypt(data):
-    # called on receive
-    return data
 
 class EchoClient(protocol.Protocol):
 
@@ -404,6 +248,7 @@ class EchoClient(protocol.Protocol):
         self.factory.app.on_connection(self.transport)
 
     def dataReceived(self, data):
+        global is_authenticated
         if is_authenticated:
             data = aes.decrypt(data, str(k_s))
             
@@ -415,7 +260,6 @@ class EchoClient(protocol.Protocol):
         else:
             if mode == "Server":
                 global is_client_initializing
-                global is_authenticated
                 if is_client_initializing == False:
                     connection = self.factory.app.connection
                     rslt = server_reply(conn=connection,recvMsg=data)
@@ -437,7 +281,6 @@ class EchoClient(protocol.Protocol):
                 connection.write(rslt)
                 
 
-                
     def connectionLost(self, reason):
         App.get_running_app().stop()
 
@@ -451,7 +294,6 @@ class EchoFactory(protocol.ClientFactory):
     def clientConnectionLost(self, conn, reason):
         self.app.print_message("connection lost")
         App.get_running_app().stop()
-        
 
     def clientConnectionFailed(self, conn, reason):
         self.app.print_message("connection failed")
@@ -576,13 +418,12 @@ class ChatPage(Screen):
         # Ensure Mutual Authentication Here!
         if is_authenticated:
             self.send_message()
-        
+
     def on_connection(self, connection):
         global connected
         global next_button
         if mode == "Server":
-            self.print_message("I see client is connecting")
-            
+            self.print_message("I see client is connecting")   
         else: 
             self.print_message("I am connecting to the server")
             client_initiate(conn=connection)
@@ -590,8 +431,7 @@ class ChatPage(Screen):
         if connected:
             App.get_running_app().stop()
         connected = True
-        #mutualAuthentication(mode=mode)
-        normalOperation()
+
         self.connection = connection
 
     def send_message(self):
