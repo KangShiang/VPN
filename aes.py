@@ -1,4 +1,5 @@
 from Crypto.Cipher import AES
+from Crypto.Hash import HMAC
 import Crypto.Random
 import base64
 
@@ -38,3 +39,9 @@ def decrypt(msg, key):
   plaintext = decryptor.decrypt(msg2[16:])
   print("ptext: " + plaintext)
   return unpad(plaintext)
+
+# Computes a 64-digit hash-based message authentication code
+def hmac(msg, s_key):
+  return HMAC.new(s_key, msg, Crypto.Hash.SHA256).hexdigest()
+
+hmac('wkueyfgwkuyfgwkufygewfku', '1236544736542')
