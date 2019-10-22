@@ -1,7 +1,7 @@
 Cython==0.23.4
 Kivy==1.7.2
 PAM==0.4.2
-Pillow==2.3.0
+Pillow==6.2.0
 Twisted==15.4.0
 Twisted-Core==13.2.0
 Twisted-Web==13.2.0
